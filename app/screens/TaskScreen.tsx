@@ -20,6 +20,9 @@ import {Task} from '../interface/Task';
 
 // Util
 import {COLORS} from '../utils/colors';
+import useLoadData from '../hooks/useLoadData';
+import useSaveData from '../hooks/useSaveData';
+import Constants from '../utils/Constants';
 
 /**
  * TodoScreen for creating and managing tasks.
@@ -86,6 +89,12 @@ const TaskScreen: React.FC = () => {
     // Update the tasks list with the filtered array of items
     setTasks(updatedItems);
   };
+
+  // Load data from AsyncStorage when the component mounts
+  useLoadData(Constants.TASK, setTasks);
+
+  // Save items to AsyncStorage whenever the items state changes
+  useSaveData(Constants.TASK, tasks);
 
   return (
     <SafeAreaView style={styles.screen}>
