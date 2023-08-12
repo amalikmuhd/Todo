@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useRef} from 'react';
 import {
   FlatList,
   Keyboard,
@@ -15,11 +15,19 @@ import TextContent from '../components/TextContent';
 import CustomButton from '../components/Button';
 import TaskItem from '../components/TaskItem';
 
-// Interface
-import {Task} from '../interface/Task';
-
 // Util
 import {COLORS} from '../utils/colors';
+
+// Redux
+import {useDispatch, useSelector} from 'react-redux';
+import {
+  addTask,
+  editTask,
+  removeTask,
+  setTaskName,
+  updateTask,
+} from '../store/actions';
+import {State} from '../store/types';
 import useLoadData from '../hooks/useLoadData';
 import useSaveData from '../hooks/useSaveData';
 import Constants from '../utils/Constants';
@@ -28,70 +36,21 @@ import Constants from '../utils/Constants';
  * TodoScreen for creating and managing tasks.
  */
 const TaskScreen: React.FC = () => {
-  const [tasks, setTasks] = useState<Task[]>([]); // List of tasks
-  const [taskName, setTaskName] = useState<string>(''); // Input value for task name
-  const [editingTaskId, setEditingTaskId] = useState<number | null>(null); // Id of task being edited or null
+  const tasks = useSelector((state: State) => state.tasks); // Select the tasks part of the state
+  const taskName = useSelector((state: State) => state.taskName); // Select the taskName part of the state
+  const editingTaskId = useSelector((state: State) => state.editingTaskId); // Select the editingTaskId part of the state
   const taskInputRef = useRef<TextInput | null>(null); // Ref to the input field for tasks
 
-  // Add task
-  const addTask = () => {
-    // Check if the taskName input is not empty after trimming
-    if (taskName.trim() !== '') {
-      // Create a new item object with a unique id and the entered task name
-      const newItem: Task = {
-        id: Date.now(), // Use the current timestamp as a unique identifier
-        name: taskName,
-      };
-      // Update the tasks list by adding the new item
-      setTasks([...tasks, newItem]);
-      // Clear the taskName input field for the next entry
-      setTaskName('');
-    }
-  };
+  const dispatch = useDispatch();
 
-  // Edit Task
-  const editTask = (itemId: number) => {
-    // Find the task with the given itemId from the tasks list
-    const itemToEdit = tasks.find(item => item.id === itemId);
-    // Force the TextInput to focus
-    taskInputRef.current?.focus();
-    // Check if the task is found
-    if (itemToEdit) {
-      // Set the task name in the input field for editing
-      setTaskName(itemToEdit.name);
-      // Set the editingTaskId to the itemId being edited
-      setEditingTaskId(itemId);
-    }
-  };
-
-  // Update Task
-  const updateTask = () => {
-    // Check if the input has a valid name and an item is being edited
-    if (taskName.trim() !== '') {
-      // Create an updated item object with the new name
-      const updatedItems: Task[] = tasks.map(item =>
-        item.id === editingTaskId ? {...item, name: taskName} : item,
-      );
-
-      // Update the states of the tasks
-      setTasks(updatedItems);
-
-      // Clear the input field and reset editing state
-      setTaskName('');
-      setEditingTaskId(null);
-    }
-  };
-
-  // Remove Task
-  const removeTask = (itemId: number) => {
-    // Filter out the task with the specified itemId from the tasks list
-    const updatedItems: Task[] = tasks.filter(item => item.id !== itemId);
-    // Update the tasks list with the filtered array of items
-    setTasks(updatedItems);
-  };
+  const onAddTask = () => dispatch(addTask());
+  const onEditTask = (taskId: number) => dispatch(editTask(taskId));
+  const onUpdateTask = () => dispatch(updateTask());
+  const onRemoveTask = (taskId: number) => dispatch(removeTask(taskId));
+  const onSetTaskName = (text: string) => dispatch(setTaskName(text));
 
   // Load data from AsyncStorage when the component mounts
-  useLoadData(Constants.TASK, setTasks);
+  useLoadData();
 
   // Save items to AsyncStorage whenever the items state changes
   useSaveData(Constants.TASK, tasks);
@@ -105,8 +64,11 @@ const TaskScreen: React.FC = () => {
           renderItem={({item}) => (
             <TaskItem
               item={item}
-              editTask={() => editTask(item.id)}
-              removeTask={() => removeTask(item.id)}
+              editTask={() => {
+                taskInputRef.current?.focus();
+                onEditTask(item.id);
+              }}
+              removeTask={() => onRemoveTask(item.id)}
             />
           )}
           keyExtractor={item => item.id.toString()}
@@ -121,14 +83,14 @@ const TaskScreen: React.FC = () => {
             placeholder="Enter here"
             value={taskName}
             ref={taskInputRef}
-            onChangeText={text => setTaskName(text)}
+            onChangeText={onSetTaskName}
             style={styles.inputContainer}
           />
           {/* Add or Update button */}
           <CustomButton
             label={editingTaskId !== null ? 'Update' : 'Add'}
             onPress={() => {
-              editingTaskId !== null ? updateTask() : addTask();
+              editingTaskId !== null ? onUpdateTask() : onAddTask();
               Keyboard.dismiss();
             }}
           />
