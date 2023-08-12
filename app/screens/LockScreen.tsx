@@ -1,43 +1,24 @@
-import React, {useCallback, useEffect} from 'react';
-import {
-  StyleSheet,
-  View,
-  SafeAreaView,
-  Platform,
-  Linking,
-  Alert,
-} from 'react-native';
-import * as LocalAuthentication from 'expo-local-authentication';
+import React from 'react';
+import {StyleSheet, View, SafeAreaView, Platform, Linking} from 'react-native';
 
 import TextContent from '../components/TextContent';
 import CustomButton from '../components/Button';
 
 import {COLORS} from '../utils/colors';
 import Route from '../utils/Route';
+import useAuthentication from '../hooks/useAuthentication';
 
 /**
  * LockScreen for authentication.
  */
 const LockScreen: React.FC = ({navigation}: any) => {
-  // Function to handle authentication
-  const authenticate = useCallback(async () => {
-    const hasAuthentication = await LocalAuthentication.hasHardwareAsync();
+  const navigateToTodoScreen = () => {
+    navigation.navigate(Route.TODO_SCREEN);
+  };
 
-    if (hasAuthentication) {
-      const result = await LocalAuthentication.authenticateAsync();
-      if (result.success) {
-        navigation.navigate(Route.TODO_SCREEN);
-      }
-    } else {
-      Alert.alert('Authentication is not setup on this device.');
-    }
-  }, [navigation]);
+  // Use the useAuthentication hook
+  useAuthentication(navigateToTodoScreen);
 
-  // Trigger authentication on component mount
-  useEffect(() => {
-    authenticate();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
   return (
     <SafeAreaView style={styles.screen}>
       <View style={styles.container}>
